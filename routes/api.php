@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\BankPaymentController;
+use App\Http\Controllers\CardPaymentController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -25,4 +27,12 @@ Route::middleware(['check.apikey'])->group(function () {
 
     Route::get('/student-payment-history/Bank', [BankPaymentController::class, 'studentBankPayment']);
     Route::get('/student-payment-history/Card', [BankPaymentController::class, 'studentBankPayment']);
+
+    Route::post('/student-card-payment', [CardPaymentController::class, 'initPayment'])->name('payment.init');
+    Route::get('/payment-history-search', [PaymentController::class, 'HistoryPaymentSearch']);
+
+
+
+   
 }); 
+
