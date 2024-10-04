@@ -25,4 +25,15 @@ class PaymentController extends Controller
             return response()->json(['status' => 500, 'message' => 'An error occurred while retrieving payments', 'error' => $e->getMessage()]);
         } 
     }
+
+
+    public function SingleHistoryPayment(Request $request){
+         try {
+            $payment = ClassPayment::where('student_id', $request->student_id)->whereIn('status', ['Approved', 'Rejected'])->get();
+
+            return response()->json(['status' => 200, 'message' => 'Payments retrieved successfully', 'data' => $payment]);
+        } catch (Exception $e) {
+            return response()->json(['status' => 500, 'message' => 'An error occurred while retrieving payments', 'error' => $e->getMessage()]);
+        }
+    }
 }
