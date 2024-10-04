@@ -24,12 +24,15 @@ Route::middleware(['check.apikey'])->group(function () {
     Route::get('/student-pending-payment', [BankPaymentController::class, 'studentPendingPayment']);
     Route::post('/student-payment', [BankPaymentController::class, 'studentPayment']);
 
+    Route::post('/student-manual-payment', [BankPaymentController::class, 'studentClassFeesManualPayment']);
 
     Route::get('/student-payment-history/Bank', [BankPaymentController::class, 'studentBankPayment']);
     Route::get('/student-payment-history/Card', [BankPaymentController::class, 'studentBankPayment']);
 
     Route::post('/student-card-payment', [CardPaymentController::class, 'initPayment'])->name('payment.init');
     Route::get('/payment-history-search', [PaymentController::class, 'HistoryPaymentSearch']);
+    Route::get('/single-student-payment-history', [PaymentController::class, 'SingleHistoryPayment']);
+    
 
 
 
