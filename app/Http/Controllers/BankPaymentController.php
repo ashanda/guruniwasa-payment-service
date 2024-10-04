@@ -20,7 +20,7 @@ public function studentClassFeesBankPayment(Request $request){
         try {
             // Decode the JSON data from the request
             $cartData = json_decode($request->cartData, true);
-
+            Log::info($cartData);
             // Check if cartData is an array and has elements
             if (is_array($cartData) && !empty($cartData)) {
                 // Initialize a counter for the number of subjects
@@ -79,6 +79,98 @@ public function studentClassFeesBankPayment(Request $request){
                 // Rollback the transaction in case of invalid data
                 DB::rollBack();
 
+                return response()->json(['status' => 400, 'message' => 'Invalid data format or empty data']);
+            }
+        } catch (Exception $e) {
+            // Rollback the transaction in case of any exception
+            DB::rollBack();
+
+            // Log the exception message for debugging (optional)
+            Log::error('Error storing payments: ' . $e->getMessage());
+
+            // Return an error response
+            return response()->json(['status' => 500, 'message' => 'An error occurred while storing payments', 'error' => $e->getMessage()]);
+        }
+    }
+
+
+
+
+    public function studentClassFeesManualPayment(Request $request){
+
+        DB::beginTransaction();
+        try {
+            // Decode the JSON data from the request
+            $cartData = json_decode($request->cartData, true);
+
+            // Check if cartData is an array and has elements
+            if (is_array($cartData) && !empty($cartData)) {
+                // Initialize a counter for the number of subjects
+                $subjectCount = count($cartData); // count the number of subjects in the cart data
+                $check_payment = ClassPayment::where('student_id', $request->student_id)->where('pay_month', $request->pay_month)->exists();
+                if($check_payment){
+                    return response()->json(['status' => 400, 'message' => 'one or more selected subject payment already made']);
+                }
+                
+                foreach ($cartData as $item) {
+                    $subjectData = json_decode($item, true);
+                    if (isset($subjectData['id'])) {
+                 // Extract the necessary data
+                    $subjectId = $subjectData['id'];
+                    $teacherId = $subjectData['tid'];
+                    $gradeId = $subjectData['gid'];
+                    $classType = $subjectData['class_type'];
+                    $fee = $subjectData['fee']; 
+
+                    // Calculate fee and apply discount if subject count is 6 or more
+                    if ($subjectCount >= 6) {
+                        // Apply a 25% discount to the fee
+                        $discountedFee = $fee - ($fee * 0.25);
+                    } else {
+                        $discountedFee = $fee; // No discount if subjects are less than 6
+                    }
+
+
+                        // Assuming you want to store this data into a ClassPayment model
+                        $payment = new ClassPayment();
+                        $payment->student_id = $request->student_id; // assuming this comes from the request
+                        $payment->subject_id = $subjectId;
+                        $payment->grade_id = $gradeId;
+                        $payment->teacher_id = $teacherId;
+                        $payment->dateTime = now(); // or use your own datetime format
+                        $payment->class_type = $classType; // class type
+                        $payment->transferSlip = $request->transferSlip; // assuming this comes from the request
+                        $payment->pay_month = $request->pay_month; // assuming this comes from the request
+                        $payment->payment_type = $request->payment_type; // assuming this comes from the request
+                        $payment->payment_id = $request->payment_id; // assuming this comes from the request
+                        $payment->fee = $discountedFee; // Store the discounted fee
+                        $payment->status = 'Approved'; // default value
+                        $payment->approved_at = now(); // default value
+                        $payment->approved_by = $request->logged_user; 
+
+                        // Add more fields if needed
+
+                        // Save the payment record
+                        $payment->save();
+                        if ($payment->id) {
+                            // Record was successfully saved
+                            Log::info('Manual Payments stored successfully');
+                        } else {
+                            // Record was not saved
+                            Log::error('Error storing payments');
+                           
+                        }
+                    }
+                }
+
+                // If everything is fine, commit the transaction
+                DB::commit();
+                
+                return response()->json(['status' => 200, 'message' => 'Manual Payments stored successfully']);
+            } else {
+                // Rollback the transaction in case of invalid data
+                DB::rollBack();
+                Log::error('Invalid data format or empty data');
                 return response()->json(['status' => 400, 'message' => 'Invalid data format or empty data']);
             }
         } catch (Exception $e) {
